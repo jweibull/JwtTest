@@ -1,5 +1,7 @@
+using JwtTest;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Cryptography;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +21,42 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme) // Se
         options.TokenValidationParameters = new TokenValidationParameters
         {
             IssuerSigningKey = symmetricKey,
+            ValidAudience = "jwt-test",
+            ValidIssuer = "jwt-test",
+            RequireSignedTokens = true,
+            RequireExpirationTime = true, // <- JWTs are required to have "exp" property set
+            ValidateLifetime = true, // <- the "exp" will be validated
+            ValidateAudience = true,
+            ValidateIssuer = true,
+        };
+    });
+
+/*
+ * Configure validation of JWT signed with a private asymmetric key.
+ * 
+ * We'll use a public key to validate if the token was signed
+ * with the corresponding private key.
+ */
+builder.Services.AddSingleton<RsaSecurityKey>(provider => {
+    // It's required to register the RSA key with depedency injection.
+    // If you don't do this, the RSA instance will be prematurely disposed.
+    RSA rsa = RSA.Create();
+    rsa.ImportRSAPublicKey(
+        source: Convert.FromBase64String(builder.Configuration["Jwt:Asymmetric:PublicKey"]),
+        bytesRead: out int _
+    );
+
+    return new RsaSecurityKey(rsa);
+});
+builder.Services.AddAuthentication()
+    .AddJwtBearer("Asymmetric", options => {
+        SecurityKey rsaKey = builder.Services.BuildServiceProvider().GetRequiredService<RsaSecurityKey>();
+
+        options.IncludeErrorDetails = true; // <- great for debugging
+                                            // Configure the actual Bearer validation
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            IssuerSigningKey = rsaKey,
             ValidAudience = "jwt-test",
             ValidIssuer = "jwt-test",
             RequireSignedTokens = true,

@@ -21,9 +21,8 @@ public class SymmetricController : ControllerBase
     [HttpPost]
     public IActionResult GenerateToken()
     {
-        var key = configuration["Jwt:Symmetric:Key"]!;
         var signingCredentials = new SigningCredentials(
-            key: new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+            key: new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Symmetric:Key"])),
             algorithm: SecurityAlgorithms.HmacSha256);
 
         DateTime jwtDate = DateTime.Now;
