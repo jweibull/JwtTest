@@ -1,4 +1,3 @@
-using JwtTest;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography;
@@ -41,11 +40,9 @@ builder.Services.AddSingleton<RsaSecurityKey>(provider => {
     // It's required to register the RSA key with depedency injection.
     // If you don't do this, the RSA instance will be prematurely disposed.
     RSA rsa = RSA.Create();
-    rsa.ImportRSAPublicKey(
-        source: Convert.FromBase64String(builder.Configuration["Jwt:Asymmetric:PublicKey"]),
-        bytesRead: out int _
-    );
-
+    string publicKeyText = File.ReadAllText("test.pub.pem");
+    rsa.ImportFromPem(publicKeyText);
+    
     return new RsaSecurityKey(rsa);
 });
 builder.Services.AddAuthentication()

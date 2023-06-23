@@ -4,7 +4,6 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace JwtTest.Controllers;
 
@@ -22,12 +21,9 @@ public class AsymmetricController : ControllerBase
     [HttpPost]
     public IActionResult GenerateTokenAsymmetric()
     {
-        var privateKey = configuration["Jwt:Asymmetric:PrivateKey"];
-
+        string privateKeyText = System.IO.File.ReadAllText("test.key.pem");
         using RSA rsa = RSA.Create();
-        rsa.ImportRSAPrivateKey( // Convert the loaded key from base64 to bytes.
-            source: Convert.FromBase64String(configuration["Jwt:Asymmetric:PrivateKey"]), // Use the private key to sign tokens
-            bytesRead: out int _); // Discard the out variable 
+        rsa.ImportFromPem(privateKeyText);
 
         var signingCredentials = new SigningCredentials(
             key: new RsaSecurityKey(rsa),
